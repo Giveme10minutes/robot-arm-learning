@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>术语表 · 备赛入门</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+
+<div class="crumbs"><a href="../index.html">备赛入门 · 学习地图</a> / 参考</div>
+<h1>术语表</h1>
+<p class="subtitle">看懂这些词，报错信息和文档就不再是天书。按主题分组，用到哪块查哪块。</p>
+
+<h2><span class="n">一</span>模型与训练</h2>
+<table>
+<thead><tr><th style="width:150px">术语</th><th>一句话解释</th></tr></thead>
+<tbody>
+<tr><td>数据集（dataset）</td><td>一堆图片 + 对应的标注文件，模型从里面学东西</td></tr>
+<tr><td>标注（labeling）</td><td>人工在图上把目标框出来并写上类别，产生 txt 标签文件</td></tr>
+<tr><td>训练（train）</td><td>反复看数据集、调整权重参数，让模型的输出越来越准</td></tr>
+<tr><td>推理（inference）</td><td>用训练好的权重去判断新图片里有什么，速度很快</td></tr>
+<tr><td>权重（weights，<code>.pt</code>）</td><td>训练得到的文件，承载"模型学到的知识"；<code>best.pt</code> 即效果最好的那一版</td></tr>
+<tr><td>预训练模型</td><td>别人用海量数据训好的权重，可以直接推理，也可以作为你训练的起点</td></tr>
+<tr><td>epoch（轮）</td><td>把整个数据集完整看一遍叫一轮；<code>epochs=50</code> 就是看 50 遍</td></tr>
+<tr><td>batch（批）</td><td>一次喂给模型的图片数量；太大会爆内存</td></tr>
+<tr><td>过拟合</td><td>模型把训练集"背下来"了，换新图片就失效。数据太少时最容易发生</td></tr>
+<tr><td>COCO</td><td>通用检测数据集，80 个日常类别；预训练模型靠它认识"人、车、瓶子"</td></tr>
+<tr><td>n / s / m / l / x</td><td>YOLO 模型的大小档位，越大越准也越慢。现场优先用最小的 <code>n</code></td></tr>
+</tbody>
+</table>
+
+<h2><span class="n">二</span>评价指标</h2>
+<table>
+<thead><tr><th style="width:150px">术语</th><th>一句话解释</th></tr></thead>
+<tbody>
+<tr><td>置信度 conf</td><td>模型对"这里有个目标"的把握程度，0 到 1</td></tr>
+<tr><td>IoU（交并比）</td><td>预测框与真实框的重叠程度，用来判断"框得准不准"</td></tr>
+<tr><td>Precision（精确率）</td><td>框出来的里面有多少是对的 → 低就是误报多</td></tr>
+<tr><td>Recall（召回率）</td><td>该框的里面有多少被框到了 → 低就是漏检多</td></tr>
+<tr><td>mAP50</td><td>综合评分，主要看它是否随训练上升；比赛更在乎召回率</td></tr>
+<tr><td>混淆矩阵</td><td>一张表，看模型把哪一类错认成了哪一类</td></tr>
+</tbody>
+</table>
+
+<h2><span class="n">三</span>图像处理</h2>
+<table>
+<thead><tr><th style="width:150px">术语</th><th>一句话解释</th></tr></thead>
+<tbody>
+<tr><td>像素 / 分辨率</td><td>图像的最小单位；分辨率就是宽 × 高的像素数</td></tr>
+<tr><td>通道 / BGR</td><td>彩色图有 3 个通道。OpenCV 的排列顺序是<strong>蓝绿红（BGR）</strong>，不是常见的 RGB，最容易踩坑</td></tr>
+<tr><td>灰度图</td><td>单通道图像，只有明暗。很多图像处理在灰度上做更快</td></tr>
+<tr><td>HSV</td><td>色调 / 饱和度 / 明度。比 RGB 更适合按"颜色"分离物体</td></tr>
+<tr><td>ROI（感兴趣区域）</td><td>图像里你真正关心的那一小块区域，只处理它能省时间</td></tr>
+<tr><td>阈值 / 二值化</td><td>把灰度图按一个界限变成黑白两色，突出目标</td></tr>
+<tr><td>形态学（腐蚀 / 膨胀 / 开 / 闭）</td><td>给黑白图"去噪点、补空洞"的操作，处理缺陷图像常用</td></tr>
+<tr><td>轮廓（contour）</td><td>二值图里连成一片的目标边界，可用于计算面积、位置</td></tr>
+<tr><td>曝光 / 增益</td><td>工业相机最重要的两个参数：曝光管"进光时间"，增益管"信号放大"</td></tr>
+<tr><td>全局快门 / 卷帘快门</td><td>全局快门整幅同时曝光（拍运动物体不变形），卷帘快门逐行曝光会有形变。赛项指定的是全局快门</td></tr>
+</tbody>
+</table>
+
+<h2><span class="n">四</span>标定与机器人</h2>
+<table>
+<thead><tr><th style="width:170px">术语</th><th>一句话解释</th></tr></thead>
+<tbody>
+<tr><td>手眼标定</td><td>求出"相机看到的位置"与"机械臂能到达的位置"之间的换算关系。标定不准 → 认得出但抓不到</td></tr>
+<tr><td>像素坐标</td><td>目标在图像里的位置，以像素为单位（左上角是原点）</td></tr>
+<tr><td>机械臂坐标</td><td>机械臂自己的坐标系（通常以底座为原点），单位是毫米</td></tr>
+<tr><td>单应矩阵 H</td><td>一个 3×3 的矩阵，把平面上的像素坐标直接换算成平面坐标。<strong>9 点标定干的就是这件事</strong></td></tr>
+<tr><td>归一化坐标</td><td>YOLO 标签里的坐标写法：像素值除以图片宽高，落在 0 到 1 之间</td></tr>
+<tr><td>内参 / 外参</td><td>内参描述相机自己的成像特性，外参描述相机装在什么位置、朝向哪</td></tr>
+<tr><td>末端执行器 / 夹爪</td><td>机械臂最前端用来干活的部件（夹爪、吸盘、标定笔）</td></tr>
+<tr><td>正运动学</td><td>由各关节角度算出末端到达的位置，SDK 能直接读</td></tr>
+<tr><td>回零 / 复位</td><td>让机械臂回到一个固定初始姿态；每次开机、异常后都要做，通常会有"叮"的一声</td></tr>
+<tr><td>工作空间</td><td>机械臂能达到的范围。赛项要求动作必须在场地范围内</td></tr>
+<tr><td>被动分拣 / 震动分类</td><td>赛项任务之一：把螺丝螺母放到摄像头下，程序判断类型后直接抓取</td></tr>
+</tbody>
+</table>
+
+<h2><span class="n">五</span>平台与部署</h2>
+<table>
+<thead><tr><th style="width:150px">术语</th><th>一句话解释</th></tr></thead>
+<tbody>
+<tr><td>Jetson Xavier NX</td><td>赛项要求的工控主控板：带 GPU 的小型嵌入式计算模块，跑 Ubuntu</td></tr>
+<tr><td>JetPack</td><td>NVIDIA 给 Jetson 准备的系统与驱动包（含 CUDA），装 PyTorch 前必须先看它</td></tr>
+<tr><td>TensorRT</td><td>NVIDIA 的推理加速引擎，能把模型跑得更快；Jetson 上常用来提帧率</td></tr>
+<tr><td>ONNX</td><td>一种通用的模型交换格式，多种工具之间倒模型时用</td></tr>
+<tr><td>虚拟环境 / <code>.venv</code></td><td>给单个项目隔离出来的 Python 环境，避免库版本互相打架</td></tr>
+<tr><td>uv</td><td>课程统一使用的 Python 项目管理工具（Rust 写的，速度快）：建环境、装库、跑脚本一套命令搞定</td></tr>
+<tr><td><code>pyproject.toml</code></td><td>项目清单，记录这个项目用了哪些库；配合 <code>uv.lock</code> 就能在别人机器上一键复现同样环境</td></tr>
+<tr><td><code>.python-version</code></td><td>记录这个项目用哪个 Python 版本，由 <code>uv python pin</code> 生成；<strong>项目里的优先于全局设置</strong></td></tr>
+<tr><td>OK / NG</td><td>合格 / 不合格。赛项要求语音播报 <code>PCB_OK</code> 或 <code>PCB_NG</code></td></tr>
+</tbody>
+</table>
+
+<div class="ask">
+遇到不懂的词先来这里查，查不到就直接问 —— 也欢迎让我们把新词补进这张表。
+</div>
+
+<div class="pager">
+<span><a href="../index.html">← 学习地图</a></span>
+<span><a href="cheatsheet.html">速查表 →</a></span>
+</div>
+
+</body>
+</html>

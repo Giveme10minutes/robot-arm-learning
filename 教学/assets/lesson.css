@@ -1,0 +1,178 @@
+/* 备赛入门课程 · 共享样式
+   所有 lesson / reference 页面都链接本文件，不要内联重复样式。 */
+
+:root {
+  --ink: #17202a;
+  --muted: #5b6470;
+  --line: #e2e6ea;
+  --card: #f7f9fb;
+  --accent: #0b5cad;
+  --accent-soft: #e8f1fa;
+  --ok: #0f7b4f;
+  --ok-soft: #e7f5ee;
+  --warn: #a4550a;
+  --warn-soft: #fdf1e3;
+  --code-bg: #f2f4f7;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 56px 26px 96px;
+  color: var(--ink);
+  background: #fff;
+  font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", "Source Han Sans SC", system-ui, sans-serif;
+  font-size: 16.5px;
+  line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- 页眉 ---------- */
+.crumbs {
+  font-size: 13px;
+  color: var(--muted);
+  letter-spacing: .04em;
+  margin-bottom: 10px;
+}
+.crumbs a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); }
+.crumbs a:hover { color: var(--accent); border-color: var(--accent); }
+
+h1 {
+  font-size: 30px;
+  line-height: 1.35;
+  margin: 0 0 6px;
+  letter-spacing: -.01em;
+}
+.subtitle {
+  color: var(--muted);
+  font-size: 15px;
+  margin: 0 0 34px;
+  padding-bottom: 22px;
+  border-bottom: 2px solid var(--ink);
+}
+
+h2 {
+  font-size: 21px;
+  margin: 46px 0 14px;
+  padding-top: 6px;
+}
+h2 .n {
+  display: inline-block;
+  min-width: 1.9em;
+  padding-right: .35em;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+h3 { font-size: 17px; margin: 28px 0 8px; }
+p { margin: 12px 0; }
+strong { font-weight: 600; }
+a { color: var(--accent); text-decoration: none; border-bottom: 1px solid #cfe0f0; }
+a:hover { border-color: var(--accent); }
+
+ul, ol { padding-left: 1.35em; }
+li { margin: 6px 0; }
+
+/* ---------- 代码 ---------- */
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-size: 14px;
+  line-height: 1.65;
+  font-family: "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+}
+code {
+  font-family: "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+  font-size: .92em;
+  background: var(--code-bg);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+.cmt { color: #6b7785; }
+
+/* ---------- 提示框 ---------- */
+.box {
+  border-radius: 5px;
+  padding: 13px 17px;
+  margin: 18px 0;
+  font-size: 15.5px;
+  border-left: 3px solid var(--muted);
+  background: var(--card);
+}
+.box .t { display: block; font-weight: 600; margin-bottom: 3px; font-size: 14px; letter-spacing: .02em; }
+.box.goal { border-color: var(--accent); background: var(--accent-soft); }
+.box.goal .t { color: var(--accent); }
+.box.warn { border-color: var(--warn); background: var(--warn-soft); }
+.box.warn .t { color: var(--warn); }
+.box.win { border-color: var(--ok); background: var(--ok-soft); }
+.box.win .t { color: var(--ok); }
+
+/* ---------- 表格 ---------- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 15px;
+}
+th, td {
+  text-align: left;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+th { background: var(--card); font-weight: 600; font-size: 14px; }
+tbody tr:last-child td { border-bottom: 1px solid var(--line); }
+
+/* ---------- 任务/清单 ---------- */
+.task {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 16px 18px;
+  margin: 20px 0;
+}
+.task > .h { font-weight: 600; margin-bottom: 8px; }
+.task ol { margin: 6px 0 0; }
+
+/* ---------- 资源区 ---------- */
+.res {
+  margin: 22px 0;
+  padding: 15px 18px;
+  background: var(--card);
+  border-radius: 5px;
+  font-size: 15px;
+}
+.res .h { font-weight: 600; font-size: 14px; letter-spacing: .02em; color: var(--muted); margin-bottom: 8px; }
+.res ul { margin: 0; padding-left: 1.2em; }
+.res li { margin: 5px 0; }
+.res .why { color: var(--muted); font-size: 14px; }
+
+/* ---------- 底部 ---------- */
+.ask {
+  margin-top: 52px;
+  padding-top: 20px;
+  border-top: 2px solid var(--ink);
+  font-size: 15.5px;
+}
+.pager {
+  margin-top: 26px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 14.5px;
+  color: var(--muted);
+}
+
+/* ---------- 打印 ---------- */
+@media print {
+  body { padding: 0 12px; font-size: 12pt; max-width: none; }
+  h1 { font-size: 20pt; }
+  h2 { font-size: 15pt; page-break-after: avoid; }
+  pre, .box, .task, .res, table { page-break-inside: avoid; }
+  a { color: var(--ink); border: none; }
+  a::after { content: " (" attr(href) ")"; font-size: 8.5pt; color: var(--muted); }
+}

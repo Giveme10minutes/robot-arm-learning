@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 4 课 · 训练自己的模型，再用它识别一次</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+
+<div class="crumbs"><a href="../index.html">备赛入门 · 学习地图</a> / 第 4 课</div>
+<h1>训练自己的模型，再用它识别一次</h1>
+<p class="subtitle">第 4 课 · 预计 1 至 2 小时（训练本身可能要跑十几分钟到几十分钟，趁这段时间做别的事）</p>
+
+<div class="box goal">
+<span class="t">今天的成果</span>
+用第 3 课的数据训练出一个模型，把第 2 课的程序里的 <code>yolo11n.pt</code> 换成你自己训出来的 <code>best.pt</code>，摄像头前的零件被<strong>正确认出并框住</strong>。同时你手里有一张"训练耗时记录表"。
+</div>
+
+<h2><span class="n">1</span>训练命令</h2>
+
+<pre><code><span class="cmt"># 用命令行训练（最简单；ultralytics 已装进项目环境，所以走 uv run）</span>
+uv run yolo train model=yolo11n.pt data=dataset/data.yaml epochs=50 imgsz=640 batch=8
+
+<span class="cmt"># 或者写成 train.py 再运行</span>
+uv run python train.py</code></pre>
+
+<table>
+<thead><tr><th>参数</th><th>含义</th><th>怎么定</th></tr></thead>
+<tbody>
+<tr><td><code>model</code></td><td>训练起点</td><td>先用 <code>yolo11n.pt</code>：小、快，适合现场</td></tr>
+<tr><td><code>epochs</code></td><td>把数据集完整过多少遍</td><td>数据少时 50 至 100；先用 20 轮试通再加大</td></tr>
+<tr><td><code>imgsz</code></td><td>训练时图片缩放到的边长</td><td>640 是默认；<strong>小目标</strong>可以试 960 或 1280</td></tr>
+<tr><td><code>batch</code></td><td>一次喂多少张</td><td>显存/内存不够就减小（4、2）</td></tr>
+</tbody>
+</table>
+
+<h2><span class="n">2</span>训练时该看什么</h2>
+
+<ul>
+<li>终端会滚动打印每一轮的结果：损失值（box_loss、cls_loss）应该整体下降。</li>
+<li>结果全部存在 <code>runs/detect/train/</code> 目录（第二次训练会变成 <code>train2</code>、<code>train3</code>……）：</li>
+</ul>
+
+<pre><code>runs/detect/train/
+├── weights/
+│   ├── best.pt      <span class="cmt"># 效果最好的那一版权重 ← 你要用的就是它</span>
+│   └── last.pt      <span class="cmt"># 最后一轮的权重，一般不用</span>
+├── results.csv      <span class="cmt"># 每轮的指标，可以用 Excel 打开看曲线</span>
+├── confusion_matrix.png
+└── val_batch0_pred.jpg   <span class="cmt"># 验证集的预测效果图，最直观</span></code></pre>
+
+<h3>三个指标，够用了</h3>
+<table>
+<thead><tr><th>指标</th><th>看什么</th></tr></thead>
+<tbody>
+<tr><td><strong>Precision</strong>（精确率）</td><td>框出来的东西里，有多少是真的。低 = 误报多</td></tr>
+<tr><td><strong>Recall</strong>（召回率）</td><td>真的目标里，有多少被框出来了。低 = 漏检多</td></tr>
+<tr><td><strong>mAP50</strong></td><td>综合分，越高越好。<strong>重点看这个数字是否随训练上升</strong></td></tr>
+</tbody>
+</table>
+
+<div class="box warn">
+<span class="t">赛场上要的是 Recall（不漏检）</span>
+漏了一个零件 = 少得 8 分；偶尔误报一次，代价小得多。所以训练后如果发现召回率低，优先<strong>加数据、加轮次、提高 imgsz</strong>，而不是去调高置信度阈值。
+</div>
+
+<h2><span class="n">3</span>用自己的模型复跑第 2 课</h2>
+
+<p>把第 2 课 <code>detect.py</code> 里的一行改掉就行：</p>
+
+<pre><code><span class="cmt"># model = YOLO("yolo11n.pt")</span>
+model = YOLO("runs/detect/train/weights/best.pt")   <span class="cmt"># 换成自己训的</span></code></pre>
+
+<p>然后照样用 uv 运行：</p>
+<pre><code>uv run python detect.py</code></pre>
+
+<div class="box win">
+<span class="t">过关标准</span>
+① 摄像头前的零件被正确识别，类别名与你的 <code>data.yaml</code> 一致；② 你能指出 <code>best.pt</code> 在哪、<code>train</code> 和 <code>train2</code> 的区别；③ <strong>填完下面这张表</strong>——这是本课最重要的产出。
+</div>
+
+<h2><span class="n">4</span>训练耗时记录表（必须填）</h2>
+
+<p>现场只有 90 分钟，你必须知道自己"训练一轮要多久"。至少跑两组对比，把数字记下来：</p>
+
+<table>
+<thead><tr><th>设备</th><th>类别数 / 每类张数</th><th>模型</th><th>epochs</th><th>imgsz</th><th>耗时</th><th>mAP50</th></tr></thead>
+<tbody>
+<tr><td>笔记本（CPU）</td><td>2 / 20</td><td>yolo11n</td><td>20</td><td>640</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>笔记本（GPU）</td><td>2 / 20</td><td>yolo11n</td><td>50</td><td>640</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>Jetson Xavier NX</td><td>2 / 20</td><td>yolo11n</td><td>20</td><td>640</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+</tbody>
+</table>
+
+<div class="box warn">
+<span class="t">为什么要填这张表</span>
+厂商手册建议"训练 100 轮以上"，那是在有独立显卡的电脑上的经验。在 Jetson Xavier NX 上现场训练会慢得多，<strong>很可能 90 分钟内跑不到 100 轮</strong>。这张表就是你的决策依据：现场到底用多少轮、多少张图、多大分辨率，全看这里的数字。
+</div>
+
+<h2><span class="n">5</span>常见坑</h2>
+
+<table>
+<thead><tr><th>现象</th><th>原因与处理</th></tr></thead>
+<tbody>
+<tr><td>报"内存不足 / out of memory"</td><td>减小 <code>batch</code>、减小 <code>imgsz</code></td></tr>
+<tr><td>训练很快结束但效果很差</td><td>数据太少或标注不一致；先检查 <code>val_batch0_pred.jpg</code> 里框得对不对</td></tr>
+<tr><td>mAP 一直是 0 或很低</td><td>类别顺序错位、标签文件对不上图片、图片路径写错——回到第 3 课的检查清单</td></tr>
+<tr><td>找不到 <code>best.pt</code></td><td>结果目录按次数递增（train2、train3），去最新的那个目录里找</td></tr>
+<tr><td>换到 Jetson 跑不起来</td><td>PyTorch 必须用 Jetson 专用版本，见<a href="https://docs.ultralytics.com/guides/nvidia-jetson/" target="_blank" rel="noopener">官方 Jetson 部署指南</a></td></tr>
+</tbody>
+</table>
+
+<div class="res">
+<div class="h">这一课最该看的</div>
+<ul>
+<li><a href="https://docs.ultralytics.com/zh/modes/train/" target="_blank" rel="noopener">Ultralytics 中文文档 · 训练模式</a> <span class="why">—— 参数与结果目录的权威说明</span></li>
+<li><a href="https://docs.ultralytics.com/zh/guides/model-training-tips/" target="_blank" rel="noopener">Ultralytics 中文文档 · 训练技巧</a> <span class="why">—— 数据量、轮次、小目标该怎么权衡</span></li>
+<li><a href="https://docs.ultralytics.com/guides/nvidia-jetson/" target="_blank" rel="noopener">Ultralytics · NVIDIA Jetson 部署指南</a> <span class="why">—— 等你要在工控机上跑的时候再仔细读</span></li>
+</ul>
+</div>
+
+<div class="ask">
+<strong>可以追问的方向：</strong>"为什么每类 20 张就够/不够""过拟合是什么、怎么看出来""为什么从预训练权重出发比从零训练好""Jetson 上怎么做 TensorRT 加速把推理提速"。
+</div>
+
+<div class="pager">
+<span><a href="0003-labeling-and-dataset.html">← 第 3 课</a></span>
+<span><a href="../reference/glossary.html">术语表 →</a></span>
+</div>
+
+</body>
+</html>

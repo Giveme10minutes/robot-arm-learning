@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 3 课 · 拍图、标注，做出自己的数据集</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+
+<div class="crumbs"><a href="../index.html">备赛入门 · 学习地图</a> / 第 3 课</div>
+<h1>拍图、标注，做出自己的数据集</h1>
+<p class="subtitle">第 3 课 · 预计 1.5 至 2.5 小时（标注是最费时间的环节，别指望十几分钟干完）</p>
+
+<div class="box goal">
+<span class="t">今天的成果</span>
+手里有一份符合 YOLO 格式的数据集：<strong>至少 2 个类别、每类 20 张以上</strong>的图片和对应的标签文件，并且有一个 <code>data.yaml</code> 能把它描述清楚，让训练程序一读就懂。
+</div>
+
+<h2><span class="n">1</span>先搞清楚 YOLO 的数据长什么样</h2>
+
+<p>训练不是"把图片丢进去"就行了。YOLO 要的是<strong>每张图片配一个同名 txt 文件</strong>，里面每一行描述一个目标：</p>
+
+<pre><code><span class="cmt"># 文件名：img_001.jpg  →  标签文件：img_001.txt</span>
+<span class="cmt"># 每行格式：类别序号  中心点x  中心点y  宽  高</span>
+<span class="cmt"># 后 4 个数字都是 0 到 1 之间的小数（除以图片宽高得到的比例）</span>
+0 0.512 0.487 0.201 0.223
+1 0.155 0.902 0.089 0.114</code></pre>
+
+<div class="box warn">
+<span class="t">三个必须记住的规则</span>
+① <strong>文件名必须一一对应</strong>：有图片没标签（或反之）会被程序忽略或报错。<br>
+② <strong>坐标是归一化的比例，不是像素</strong>——所以换分辨率不用重标。<br>
+③ <strong>类别从 0 开始编号</strong>，与 <code>classes.txt</code> 的<strong>行顺序</strong>严格对应。顺序定了不许改。
+</div>
+
+<h2><span class="n">2</span>动手一：采集图片</h2>
+
+<p>用第 1 课的脚本改一个采集版本：按空格存一张、按 <code>q</code> 退出，自动按序号命名。存成 <code>collect.py</code>，用 <code>uv run python collect.py</code> 运行。</p>
+
+<pre><code>import cv2, os, time
+
+os.makedirs("images_raw", exist_ok=True)
+cap = cv2.VideoCapture(0)
+n = 0
+
+while True:
+    ok, frame = cap.read()
+    if not ok:
+        break
+    cv2.imshow("collect", frame)
+    key = cv2.waitKey(1) &amp; 0xFF
+    if key == ord(" "):
+        n += 1
+        path = f"images_raw/{int(time.time()*1000)}_{n:03d}.jpg"
+        cv2.imwrite(path, frame)
+        print("saved", path)
+    elif key == ord("q"):
+        break
+
+cap.release()
+cv2.destroyAllWindows()</code></pre>
+
+<div class="box warn">
+<span class="t">采集要求（直接影响模型效果）</span>
+每类至少 <strong>20 张</strong>，而且要<strong>换角度、换位置、换光照、换背景</strong>拍。全都从同一个角度拍 20 张，等于只给了 1 张。赛场上的物料位置是随机的，训练数据越"花"，模型越稳。
+</div>
+
+<h2><span class="n">3</span>动手二：标注</h2>
+
+<div class="task">
+<div class="h">用 labelImg 标注（厂商手册也是这个工具）</div>
+<ol>
+<li>安装并启动（标注工具属于"命令行工具"，用 uv 单独装）：
+<pre><code>uv tool install labelImg
+labelImg</code></pre></li>
+<li>左下角把格式切换为 <strong>YOLO</strong>（不是 PascalVOC）。</li>
+<li>点"打开目录"选中 <code>images_raw</code>，先确定类别：<strong>类别顺序一旦定下，之后所有课都不许改</strong>。</li>
+<li>按 <code>w</code> 画框 → 输入类别名 → <code>Ctrl+S</code> 保存 → 按 <code>d</code> 下一张。<br>
+<span class="cmt">标注时把物体框紧一些，不要框一大圈留白。</span></li>
+<li>标完后检查：<code>images_raw</code> 里每张 <code>.jpg</code> 都应该有一个同名 <code>.txt</code>。</li>
+</ol>
+</div>
+
+<div class="box warn">
+<span class="t">小目标上的注意点</span>
+赛项里 PCB 板上的缺陷可能只有几十个像素，标注时<strong>放大图片再画框</strong>（labelImg 支持缩放），框紧、不重叠、不漏标。这一课先用零件练手，养成"放大再标"的习惯。
+</div>
+
+<h2><span class="n">4</span>动手三：整理成数据集目录</h2>
+
+<pre><code>dataset/
+├── images/
+│   ├── train/          <span class="cmt"># 约 80% 的图片</span>
+│   └── val/            <span class="cmt"># 约 20% 的图片（留着检验效果，不参与训练）</span>
+├── labels/
+│   ├── train/          <span class="cmt"># 与 train 图片同名的 txt</span>
+│   └── val/
+└── data.yaml</code></pre>
+
+<p><code>data.yaml</code> 内容：</p>
+
+<pre><code>path: ./dataset
+train: images/train
+val: images/val
+
+names:
+  0: nut          <span class="cmt"># 类别顺序必须与你标注时用的顺序一致</span>
+  1: screw</code></pre>
+
+<div class="box win">
+<span class="t">过关标准</span>
+① 每类 20 张以上、图片与标签一一对应；② <code>data.yaml</code> 的 <code>names</code> 顺序与标注一致；③ 你能说出"训练集和验证集为什么要分开"；④ 记录标注总耗时（这个数字在赛场上非常关键）。
+</div>
+
+<h2><span class="n">5</span>常见坑</h2>
+
+<table>
+<thead><tr><th>现象</th><th>原因与处理</th></tr></thead>
+<tbody>
+<tr><td>标了半天，退出后全没了</td><td>忘记保存。labelImg 每张都要 <code>Ctrl+S</code>，养成"画框后就按一下"的习惯</td></tr>
+<tr><td>训练时报"类别数不匹配"</td><td><code>data.yaml</code> 的 <code>names</code> 数量或顺序与标签里的序号不一致</td></tr>
+<tr><td>图片和标签错位</td><td>某张图没有对应 txt（或反过来），文件名对不上</td></tr>
+<tr><td>模型把两类混为一类</td><td>类别之间长得像、标注又不一致（同一种零件有时标 A 有时标 B），标准必须统一</td></tr>
+<tr><td>Windows 上 labelImg 启动报错</td><td>labelImg 项目已归档，可改用 <a href="https://github.com/CVHub520/X-AnyLabeling" target="_blank" rel="noopener">X-AnyLabeling</a> 或在线平台 <a href="https://roboflow.com/" target="_blank" rel="noopener">Roboflow</a>，标注结果同样能导出 YOLO 格式</td></tr>
+</tbody>
+</table>
+
+<div class="res">
+<div class="h">这一课最该看的</div>
+<ul>
+<li><a href="https://docs.ultralytics.com/zh/datasets/detect/" target="_blank" rel="noopener">Ultralytics 中文文档 · 检测数据集格式</a> <span class="why">—— 目录结构与标签格式的权威说明，对照检查你的数据集</span></li>
+<li><a href="https://github.com/HumanSignal/labelImg" target="_blank" rel="noopener">labelImg 官方仓库 README</a> <span class="why">—— 安装方式与快捷键（w 画框、d 下一张、Ctrl+S 保存）</span></li>
+</ul>
+</div>
+
+<div class="ask">
+<strong>可以追问的方向：</strong>"每类 20 张够不够""标注不一致会有什么后果""为什么要有验证集""PCB 板上的小缺陷该怎么标才不丢信息"。
+</div>
+
+<div class="pager">
+<span><a href="0002-yolo-inference.html">← 第 2 课</a></span>
+<span><a href="0004-train-and-rerun.html">第 4 课 · 训练自己的模型 →</a></span>
+</div>
+
+</body>
+</html>

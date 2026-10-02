@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 2 课 · 让程序认出画面里的东西</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+
+<div class="crumbs"><a href="../index.html">备赛入门 · 学习地图</a> / 第 2 课</div>
+<h1>让程序认出画面里的东西</h1>
+<p class="subtitle">第 2 课 · 预计 40 至 70 分钟（含首次下载模型的时间）</p>
+
+<div class="box goal">
+<span class="t">今天的成果</span>
+摄像头画面里出现的东西被<strong>框出来</strong>，框上标着它的名字和置信度；你能在终端里打印出"检测到了什么、在哪里、有多确定"。同时你会亲自体会到一件事：<strong>它认不出我们真正要认的东西</strong>。
+</div>
+
+<h2><span class="n">1</span>先建立三个概念</h2>
+
+<table>
+<thead><tr><th>概念</th><th>一句话理解</th></tr></thead>
+<tbody>
+<tr><td><strong>目标检测</strong></td><td>不仅要知道画面里"有什么"，还要知道"在哪"——输出一串框，每个框带类别和置信度</td></tr>
+<tr><td><strong>YOLO</strong></td><td>一类检测算法的名字，特点是"看一眼就出结果"（一次前向计算给出所有框），所以能做实时视频</td></tr>
+<tr><td><strong>预训练模型</strong></td><td>别人已经用海量数据训练好的权重文件。你直接拿来用 = <strong>推理</strong>；拿自己的数据继续训练 = <strong>训练</strong>。本课只做推理</td></tr>
+</tbody>
+</table>
+
+<h2><span class="n">2</span>动手：跑通推理</h2>
+
+<div class="task">
+<div class="h">步骤</div>
+<ol>
+<li>环境里装上 ultralytics（YOLO 的官方库）：
+<pre><code>uv add ultralytics</code></pre></li>
+<li>新建 <code>detect.py</code>，运行后第一次会自动下载权重文件 <code>yolo11n.pt</code>（约 5 MB）：
+<pre><code>import cv2
+from ultralytics import YOLO
+
+model = YOLO("yolo11n.pt")        <span class="cmt"># n = nano，最小最快的一档</span>
+cap = cv2.VideoCapture(0)
+
+while True:
+    ok, frame = cap.read()
+    if not ok:
+        break
+
+    results = model(frame, conf=0.4, verbose=False)
+    r = results[0]
+
+    for box in r.boxes:            <span class="cmt"># 每个框：类别、置信度、坐标</span>
+        cls_id = int(box.cls[0])
+        conf = float(box.conf[0])
+        x1, y1, x2, y2 = box.xyxy[0].tolist()
+        print(f"{model.names[cls_id]}  conf={conf:.2f}  box=({x1:.0f},{y1:.0f},{x2:.0f},{y2:.0f})")
+
+    cv2.imshow("yolo", r.plot())    <span class="cmt"># plot() 直接返回画好框的图</span>
+    if cv2.waitKey(1) &amp; 0xFF == ord("q"):
+        break
+
+cap.release()
+cv2.destroyAllWindows()</code></pre></li>
+<li>运行 <code>uv run python detect.py</code>，把手机、水杯、人放进画面试试。</li>
+</ol>
+</div>
+
+<div class="box win">
+<span class="t">过关标准</span>
+① 画面里的常见物体被框住并显示英文类别名；② 你能说清 <code>boxes</code> 里每个框包含哪三类信息；③ 记录两个数字：<strong>帧率大概多少</strong>（画面流不流畅）、<strong>整节课花了多少分钟</strong>。
+</div>
+
+<h2><span class="n">3</span>关键一步：亲手验证"它不会用"</h2>
+
+<p>拿一颗<strong>螺母或螺丝</strong>放到摄像头前，看看会发生什么。多半是：什么都检测不到，或者被误认成别的东西。</p>
+
+<div class="box warn">
+<span class="t">这就是本课最重要的收获</span>
+预训练模型是在 COCO 数据集上训练的，只有 <strong>80 个类别</strong>（人、车、瓶子、椅子等日常物体），里面<strong>没有"螺母"，更没有"PCB 板上的焊点缺陷"</strong>。而且赛项要检测的是<strong>小目标</strong>（小小的零件、板子上几毫米的缺陷），比人这种大目标难得多。<br><br>
+所以：<strong>赛场上必须用自己拍、自己标、自己训的模型</strong>——这正是第 3、4 课要做的事。
+</div>
+
+<h2><span class="n">4</span>常见坑</h2>
+
+<table>
+<thead><tr><th>现象</th><th>原因与处理</th></tr></thead>
+<tbody>
+<tr><td>首次运行卡住很久</td><td>在下载权重文件；网络慢可以手动下载 <code>yolo11n.pt</code> 放到脚本同目录</td></tr>
+<tr><td>画面很卡</td><td>CPU 推理较慢，属正常。可把分辨率降到 640×480、或每 2 帧检测一次（跳帧）</td></tr>
+<tr><td>框太多太杂</td><td>调高 <code>conf</code>（例如 0.5 至 0.6）只保留高置信度的框</td></tr>
+<tr><td>想只看某一类</td><td>加参数 <code>classes=[0]</code> 只检测人；或在循环里按名字过滤</td></tr>
+<tr><td>同一物体每帧框位置抖动</td><td>正常现象，检测是逐帧独立的；需要稳定结果可做多帧投票</td></tr>
+</tbody>
+</table>
+
+<div class="res">
+<div class="h">这一课最该看的</div>
+<ul>
+<li><a href="https://docs.ultralytics.com/zh/modes/predict/" target="_blank" rel="noopener">Ultralytics 官方中文文档 · 预测模式</a> <span class="why">—— 参数、结果解析、保存，这一页看完就够了</span></li>
+<li><a href="https://www.bilibili.com/video/BV1eDy3YCEia/" target="_blank" rel="noopener">B 站：一小时掌握 YOLOv8 环境安装 + 推理</a> <span class="why">—— YOLOv8 与 YOLO11 写法几乎一样，看它的推理部分</span></li>
+</ul>
+</div>
+
+<div class="ask">
+<strong>可以追问的方向：</strong>"单阶段检测和两阶段有什么区别""置信度和 IoU 是什么意思""为什么我的笔记本跑得比同学慢""怎么把检测结果里的坐标用到别的地方去"——最后这个问题正是第 5 课（手眼标定）的开头。
+</div>
+
+<div class="pager">
+<span><a href="0001-python-env-and-camera.html">← 第 1 课</a></span>
+<span><a href="0003-labeling-and-dataset.html">第 3 课 · 做出自己的数据集 →</a></span>
+</div>
+
+</body>
+</html>

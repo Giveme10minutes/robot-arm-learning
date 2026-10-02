@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>速查表 · 备赛入门</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+
+<div class="crumbs"><a href="../index.html">备赛入门 · 学习地图</a> / 参考</div>
+<h1>速查表</h1>
+<p class="subtitle">常用的命令和代码片段，忘了就来这里抄。建议打印一份放在工位旁。</p>
+
+<h2><span class="n">1</span>环境与安装（统一用 uv）</h2>
+<pre><code><span class="cmt"># 安装 uv</span>
+curl -LsSf https://astral.sh/uv/install.sh | sh                          <span class="cmt"># macOS / Linux</span>
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"   <span class="cmt"># Windows</span>
+
+<span class="cmt"># 国内镜像（一次即可，装库全靠它提速）</span>
+export UV_DEFAULT_INDEX="https://pypi.tuna.tsinghua.edu.cn/simple"       <span class="cmt"># macOS / Linux</span>
+$env:UV_DEFAULT_INDEX="https://pypi.tuna.tsinghua.edu.cn/simple"         <span class="cmt"># Windows PowerShell</span>
+
+<span class="cmt"># 统一 Python 版本（全班一致，避免"我这能跑你那里报错"）</span>
+uv python pin --global 3.11          <span class="cmt"># 全局默认版本</span>
+uv python install 3.11               <span class="cmt"># 可选：提前装下来，避免首次使用时才下载</span>
+
+<span class="cmt"># 建项目 → 钉版本 → 加依赖 → 运行（不用手动激活环境）</span>
+mkdir robot_training
+cd robot_training
+uv init
+uv python pin 3.11                   <span class="cmt"># 项目级钉死（比全局更优先）</span>
+uv add opencv-python numpy ultralytics
+uv run python camera.py
+
+<span class="cmt"># 拿到别人的项目（含 pyproject.toml + uv.lock）时复现同样的环境</span>
+uv sync
+
+<span class="cmt"># 临时跑个脚本、不想建项目</span>
+uv run --with opencv-python python demo.py
+
+<span class="cmt"># 装命令行工具（如标注工具 labelImg）</span>
+uv tool install labelImg</code></pre>
+
+<h2><span class="n">2</span>读摄像头 / 存图</h2>
+<pre><code>import cv2
+
+cap = cv2.VideoCapture(0)            <span class="cmt"># 打不开就试 1、2</span>
+while True:
+    ok, frame = cap.read()
+    if not ok:
+        break
+    cv2.imshow("win", frame)
+    k = cv2.waitKey(1) &amp; 0xFF
+    if k == ord("s"):
+        cv2.imwrite("shot.jpg", frame)
+    if k == ord("q"):
+        break
+cap.release()
+cv2.destroyAllWindows()</code></pre>
+
+<h2><span class="n">3</span>YOLO 推理</h2>
+<pre><code>from ultralytics import YOLO
+
+model = YOLO("yolo11n.pt")                    <span class="cmt"># 或自己的 best.pt</span>
+results = model(frame, conf=0.4, verbose=False)
+r = results[0]
+
+for box in r.boxes:
+    cls_id = int(box.cls[0])
+    conf   = float(box.conf[0])
+    x1, y1, x2, y2 = box.xyxy[0].tolist()
+    cx, cy = (x1 + x2) / 2, (y1 + y2) / 2     <span class="cmt"># 中心点，抓取常用它</span>
+    print(model.names[cls_id], conf, cx, cy)
+
+annotated = r.plot()                          <span class="cmt"># 画好框的图</span></code></pre>
+
+<h2><span class="n">4</span>训练</h2>
+<pre><code><span class="cmt"># 命令行（ultralytics 装在项目里，用 uv run 调用）</span>
+uv run yolo train model=yolo11n.pt data=dataset/data.yaml epochs=50 imgsz=640 batch=8
+
+<span class="cmt"># 写成 train.py 后用 uv 运行</span>
+uv run python train.py
+
+<span class="cmt"># 结果在 runs/detect/train*/weights/best.pt</span>
+<span class="cmt"># 在验证集上评估、看指标</span>
+uv run yolo val model=runs/detect/train/weights/best.pt data=dataset/data.yaml</code></pre>
+
+<h2><span class="n">5</span>数据集结构</h2>
+<pre><code>dataset/
+├── images/train/  images/val/
+├── labels/train/  labels/val/        <span class="cmt"># 与图片同名 .txt</span>
+└── data.yaml
+
+<span class="cmt"># 标签每行：类别序号 中心x 中心y 宽 高（均为 0~1 的比例）</span>
+0 0.512 0.487 0.201 0.223</code></pre>
+
+<h2><span class="n">6</span>常用图像处理片段</h2>
+<pre><code>gray  = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)     <span class="cmt"># 转灰度</span>
+hsv   = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)      <span class="cmt"># 转 HSV</span>
+rgb   = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)      <span class="cmt"># 给非 OpenCV 库用</span>
+
+_, bw = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)   <span class="cmt"># 二值化</span>
+bw    = cv2.morphologyEx(bw, cv2.MORPH_OPEN, kernel)       <span class="cmt"># 去噪点</span>
+
+cnts, _ = cv2.findContours(bw, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+for c in cnts:
+    x, y, w, h = cv2.boundingRect(c)                <span class="cmt"># 外接矩形</span>
+    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+roi = frame[y:y+h, x:x+w]                           <span class="cmt"># 剪切区域（先 y 后 x）</span>
+cv2.putText(frame, "OK", (x, y-6), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,255,0), 2)</code></pre>
+
+<h2><span class="n">7</span>像素坐标 → 机械臂坐标（9 点标定）</h2>
+<pre><code>import cv2, numpy as np
+
+<span class="cmt"># 至少 4 组对应点：图像里测到的像素点 → 机械臂走到的实际点（毫米）</span>
+pixel = np.float32([[120, 88], [430, 95], [437, 402], [115, 396]])
+robot = np.float32([[100, 100], [300, 100], [300, 300], [100, 300]])
+
+H, mask = cv2.findHomography(pixel, robot)          <span class="cmt"># 解出 3x3 变换矩阵</span>
+
+<span class="cmt"># 之后任意一个检测框中心点都能换算</span>
+pts = np.float32([[200, 150]]).reshape(-1, 1, 2)
+xy = cv2.perspectiveTransform(pts, H).reshape(-1, 2)
+print(xy)                                           <span class="cmt"># 机械臂该去的坐标</span></code></pre>
+
+<h2><span class="n">8</span>串口与机械臂通信</h2>
+<pre><code>import serial
+
+ser = serial.Serial("COM3", 115200, timeout=1)   <span class="cmt"># Linux 上是 /dev/ttyUSB0</span>
+ser.write(b"hello\n")
+line = ser.readline()
+print(line)
+ser.close()</code></pre>
+<p class="why">Dobot 机械臂也可以走 TCP/IP，官方 Python SDK 见 <a href="https://github.com/Dobot-Arm/TCP-IP-Python-V4" target="_blank" rel="noopener">Dobot-Arm/TCP-IP-Python-V4</a>。</p>
+
+<h2><span class="n">9</span>语音播报</h2>
+<pre><code><span class="cmt"># 命令行生成语音文件</span>
+edge-tts --text "PCB NG" --write-media out.mp3
+
+<span class="cmt"># Python 播放（Windows 示例）</span>
+import os
+os.system("start out.mp3")</code></pre>
+<p class="why">参数以 <a href="https://github.com/rany2/edge-tts" target="_blank" rel="noopener">edge-tts 仓库</a>说明为准；也可用 <code>pyttsx3</code> 直接朗读。</p>
+
+<h2><span class="n">10</span>每课都要记的两个数字</h2>
+<table>
+<thead><tr><th>记录项</th><th>为什么</th></tr></thead>
+<tbody>
+<tr><td>本次任务耗时（分钟）</td><td>现场 90 分钟的总预算由这些数字加出来</td></tr>
+<tr><td>遇到的问题与解决方式</td><td>现场会重现同样的坑，有记录就能 5 分钟解决</td></tr>
+</tbody>
+</table>
+
+<div class="pager">
+<span><a href="glossary.html">← 术语表</a></span>
+<span><a href="../index.html">学习地图 →</a></span>
+</div>
+
+</body>
+</html>

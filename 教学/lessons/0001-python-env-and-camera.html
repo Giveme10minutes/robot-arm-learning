@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 1 课 · 搭好环境，让摄像头画面出现在屏幕上</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+
+<div class="crumbs"><a href="../index.html">备赛入门 · 学习地图</a> / 第 1 课</div>
+<h1>搭好环境，让摄像头画面出现在屏幕上</h1>
+<p class="subtitle">第 1 课 · 预计 40 至 90 分钟（第一次装环境会慢，记下你的实际用时）</p>
+
+<div class="box goal">
+<span class="t">今天的成果</span>
+运行一段 Python 程序，屏幕上弹出一个窗口显示摄像头的实时画面，按 <code>q</code> 能退出，并且能按一下键把当前画面存成一张图片。
+</div>
+
+<h2><span class="n">1</span>先搞懂两件事：虚拟环境与 uv</h2>
+
+<p>机器上会同时存在很多个 Python 项目，每个项目需要的库版本不一样。虚拟环境就是给<strong>这一个项目</strong>准备一个独立的抽屉，装什么都只影响这个抽屉，不会弄乱系统本身。</p>
+
+<p>我们统一用 <strong>uv</strong> 来管理它。uv 是一个用 Rust 写的 Python 项目管理工具，把"建环境、装库、跑脚本"合成一套命令，速度比传统做法快得多。<strong>全班统一用 uv</strong>，环境才能对齐，才不会出现"在我电脑上能跑、在你电脑上不行"。</p>
+
+<p>三个概念记住就够了：</p>
+
+<table>
+<thead><tr><th style="width:170px">东西</th><th>是什么</th></tr></thead>
+<tbody>
+<tr><td><code>pyproject.toml</code></td><td>项目的"清单"，记录这个项目用了哪些库</td></tr>
+<tr><td><code>.venv/</code></td><td>真正存放库的环境目录，由 uv 自动创建，你不用手动管</td></tr>
+<tr><td><code>uv.lock</code></td><td>把每个库锁定到确切版本；别人拿到它和 <code>pyproject.toml</code>，一条命令就能复现一模一样的环境</td></tr>
+</tbody>
+</table>
+
+<h2><span class="n">2</span>动手：装 uv、建项目</h2>
+
+<div class="task">
+<div class="h">步骤</div>
+<ol>
+<li>安装 uv（选你系统对应的那一行）：
+<pre><code><span class="cmt"># Windows（PowerShell）</span>
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+<span class="cmt"># macOS / Linux</span>
+curl -LsSf https://astral.sh/uv/install.sh | sh</code></pre>
+装完<strong>关掉终端重新开一个</strong>，再验证：
+<pre><code>uv --version</code></pre></li>
+<li>配置国内镜像（决定后面装库快不快，只需做一次）：
+<pre><code><span class="cmt"># macOS / Linux（写进 ~/.zshrc 或 ~/.bashrc 可永久生效）</span>
+export UV_DEFAULT_INDEX="https://pypi.tuna.tsinghua.edu.cn/simple"
+
+<span class="cmt"># Windows PowerShell（永久生效可加到系统环境变量）</span>
+$env:UV_DEFAULT_INDEX="https://pypi.tuna.tsinghua.edu.cn/simple"</code></pre></li>
+<li>统一 Python 版本（全班都用 3.11）：
+<pre><code>uv python pin --global 3.11</code></pre>
+这会把 3.11 设为这台机器上 uv 的<strong>全局默认 Python 版本</strong>（Windows 写在 <code>%APPDATA%\uv\.python-version</code>，macOS / Linux 写在 <code>~/.config/uv/.python-version</code>）。之后 uv 需要 Python 时会自动下载并使用它，不用你手动装。<br>
+<strong>可选、但推荐：</strong>先跑一次 <code>uv python install 3.11</code> 把它预装下来——否则第一次用到时才下载，网络不稳或赛场断网时容易卡住。<br>
+选 3.11 的理由：OpenCV、PyTorch、ultralytics 这些库的 3.11 轮子最齐全，装环境最不容易踩坑。<br>
+<strong>⚠ 注意优先级：</strong>项目目录里的 <code>.python-version</code> 比全局设置<strong>更优先</strong>。所以下一步建好项目后，还要进项目里再执行一次 <code>uv python pin 3.11</code>，把版本在项目里也钉死。</li>
+<li>创建项目目录，并<strong>进到目录里</strong>初始化项目（uv 会顺手准备好 Python 环境）：
+<pre><code>mkdir robot_training
+cd robot_training
+uv init
+uv python pin 3.11</code></pre>
+说明：<code>uv init 目录名</code> 也能一步建好目录再初始化，两种都合法；但我们统一用"先建目录、进去再执行"的方式，位置最不容易搞混——后面所有命令都要<strong>在这个项目目录里</strong>执行。<br>
+<code>uv python pin 3.11</code> 会在项目里生成一个 <code>.python-version</code> 文件（内容就是 <code>3.11</code>）。这一层<strong>优先于全局设置</strong>，也是全班真正对齐的那一层——所以全局、项目各 pin 一次，两边都不会跑偏。</li>
+<li>加入依赖 —— OpenCV 与 NumPy：
+<pre><code>uv add opencv-python numpy</code></pre>
+这一步会自动建好 <code>.venv</code>，并把依赖写进 <code>pyproject.toml</code>。<strong>不需要手动激活环境</strong>。</li>
+<li>确认环境可用：
+<pre><code>uv run python -c "import cv2; print(cv2.__version__)"</code></pre>
+能看到版本号就说明环境好了。</li>
+</ol>
+</div>
+
+<div class="box">
+<span class="t">命令的跨平台差异（先分清，少走弯路）</span>
+<code>mkdir</code>、<code>cd</code>、<code>uv</code> 这几条在 Windows 和 macOS / Linux 上都能直接用——Windows 的命令提示符（CMD）与 PowerShell 都支持 <code>mkdir</code>（<a href="https://learn.microsoft.com/zh-cn/windows-server/administration/windows-commands/mkdir" target="_blank" rel="noopener">CMD 官方说明</a>、<a href="https://learn.microsoft.com/zh-cn/powershell/scripting/learn/shell/using-aliases" target="_blank" rel="noopener">PowerShell 别名</a>）。<br>
+真正需要按系统区分的只有<strong>设置环境变量</strong>的写法：<br>
+· macOS / Linux：<code>export UV_DEFAULT_INDEX="..."</code><br>
+· Windows PowerShell：<code>$env:UV_DEFAULT_INDEX="..."</code><br>
+另外注意：<code>mkdir -p a/b</code> 这种带 <code>-p</code> 的写法只在 macOS / Linux 有效，CMD 不认；所以课程里统一用最简单的单层 <code>mkdir 目录名</code>。
+</div>
+
+<div class="box warn">
+<span class="t">三条最容易犯的错</span>
+① <strong>装完 uv 马上用，提示"命令找不到"</strong>——重开一个终端就好（PATH 需要重新加载）。<br>
+② <strong>混用 <code>pip install</code> 和 <code>uv add</code></strong>——pip 会装到别的地方（甚至系统 Python），之后 <code>uv run</code> 时报"找不到 cv2"。课程里统一用 <code>uv add</code>。<br>
+③ <strong>在项目目录之外运行 <code>uv run</code></strong>——它找不到 <code>pyproject.toml</code>。执行命令前先 <code>cd</code> 回项目目录。
+</div>
+
+<h2><span class="n">3</span>动手：让画面出来</h2>
+
+<p>在项目目录里新建文件 <code>camera.py</code>，内容如下：</p>
+
+<pre><code>import cv2
+
+cap = cv2.VideoCapture(0)          <span class="cmt"># 0 表示默认摄像头；打不开就试 1</span>
+if not cap.isOpened():
+    raise SystemExit("打不开摄像头：换索引试试，或检查系统权限")
+
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
+while True:
+    ok, frame = cap.read()
+    if not ok:
+        print("读帧失败")
+        break
+
+    print(frame.shape, frame.dtype)   <span class="cmt"># 看一眼"图像"在程序里长什么样</span>
+
+    cv2.imshow("camera", frame)
+    key = cv2.waitKey(1) &amp; 0xFF
+    if key == ord("q"):                <span class="cmt"># 按 q 退出</span>
+        break
+    if key == ord("s"):                <span class="cmt"># 按 s 存一张图</span>
+        cv2.imwrite("shot.jpg", frame)
+        print("已保存 shot.jpg")
+
+cap.release()
+cv2.destroyAllWindows()</code></pre>
+
+<p>用 uv 运行它（注意是 <code>uv run</code>，不要直接 <code>python</code>）：</p>
+<pre><code>uv run python camera.py</code></pre>
+
+<div class="box win">
+<span class="t">过关标准</span>
+① 弹出窗口能看到自己（<code>shot.jpg</code> 能存下来）；② 窗口关闭后程序正常退出，不留黑窗口；③ 你已经知道自己跑通这一步花了多少分钟。<br>
+顺手做一件事：在循环里打印 <code>frame.shape</code>，看看那个三维数字，并在 <a href="../reference/glossary.html">术语表</a>里找到"BGR"这个词记下来。
+</div>
+
+<h2><span class="n">4</span>几个必踩的坑（先看，能省半小时）</h2>
+
+<table>
+<thead><tr><th>现象</th><th>原因与处理</th></tr></thead>
+<tbody>
+<tr><td><code>uv</code> 命令找不到</td><td>装完没重开终端；或安装路径没进 PATH，重开终端后再试</td></tr>
+<tr><td>import cv2 报"找不到模块"</td><td>用了 <code>python camera.py</code> 而不是 <code>uv run python camera.py</code>，或当初是用 <code>pip</code> 装的库</td></tr>
+<tr><td>窗口一片黑 / 打不开</td><td>摄像头索引不对，把 <code>VideoCapture(0)</code> 改成 <code>1</code> 或 <code>2</code> 试</td></tr>
+<tr><td>macOS 上直接报权限错误</td><td>系统设置 → 隐私与安全性 → 摄像头，允许终端 / 你的编辑器访问</td></tr>
+<tr><td>窗口卡死、点不动</td><td>必须有 <code>cv2.waitKey(1)</code>，它负责处理窗口事件</td></tr>
+<tr><td>画面颜色发蓝或红蓝反了</td><td>OpenCV 用 <strong>BGR</strong>，其他库常用 RGB；转换用 <code>cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)</code></td></tr>
+<tr><td>装库特别慢或失败</td><td>镜像没配好，回去做第 2 步的 <code>UV_DEFAULT_INDEX</code></td></tr>
+</tbody>
+</table>
+
+<div class="res">
+<div class="h">这一课最该看的</div>
+<ul>
+<li><a href="https://docs.astral.sh/uv/getting-started/installation/" target="_blank" rel="noopener">uv 官方文档 · 安装</a> <span class="why">—— 各平台安装方式与升级，装不上时来这里看</span></li>
+<li><a href="https://uv.doczh.com/guides/projects/" target="_blank" rel="noopener">uv 中文文档 · 项目开发</a> <span class="why">—— <code>uv init</code> / <code>uv add</code> / <code>uv run</code> 的完整说明</span></li>
+<li><a href="https://www.cnblogs.com/ymtianyu/p/19361370" target="_blank" rel="noopener">国内镜像与 uv 加速实践</a> <span class="why">—— 镜像不生效、下载慢的时候看这篇</span></li>
+<li><a href="https://www.bilibili.com/video/BV1Fo4y1d7JL/" target="_blank" rel="noopener">黑马程序员：10 小时学会图像处理 OpenCV 入门</a> <span class="why">—— 只看前几集（读图 + 读摄像头）即可</span></li>
+<li><a href="https://woshicver.com/ThirdSection/2_2_%E8%A7%86%E9%A2%91%E5%85%A5%E9%97%A8/" target="_blank" rel="noopener">OpenCV 中文文档 · 视频入门</a> <span class="why">—— 官方中文，读摄像头与存视频的标准写法</span></li>
+</ul>
+</div>
+
+<div class="box warn">
+<span class="t">一条边界：别拿 uv 去动工控机上的厂商环境</span>
+比赛用的 Jetson Xavier NX 上是<strong>厂商配好的 Ubuntu 环境</strong>（labelImg、训练脚本、GUI 程序都在里面）。本课的 uv 流程用在你自己的电脑上；工控机上要装什么，先按厂商手册来、先备份，不要用 <code>uv sync</code> 之类去覆盖它。
+</div>
+
+<div class="ask">
+<strong>有任何不清楚的，直接追问。</strong>比如"uv 和 pip 到底差在哪""<code>uv run</code> 是怎么找到环境的""为什么是 BGR 不是 RGB""我的摄像头索引怎么确定"——这些问题都值得问清楚，不要跳过去。
+</div>
+
+<div class="pager">
+<span><a href="../index.html">← 学习地图</a></span>
+<span><a href="0002-yolo-inference.html">第 2 课 · 让程序认出画面里的东西 →</a></span>
+</div>
+
+</body>
+</html>

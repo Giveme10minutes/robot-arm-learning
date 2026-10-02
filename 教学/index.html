@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>备赛入门 · 学习地图</title>
+<link rel="stylesheet" href="assets/lesson.css">
+</head>
+<body>
+
+<div class="crumbs">人工智能与机器人技术应用挑战赛 · 备赛入门</div>
+<h1>学习地图</h1>
+<p class="subtitle">给大二同学的赛前入门路线 —— 每个知识点都配了可看、可跑、可验证的东西。</p>
+
+<div class="box goal">
+<span class="t">我们为什么要学这些</span>
+这个赛项的比赛现场只有 <strong>90 分钟</strong>，要在这个时间里完成：搭建设备 → 拍图 → 标注 → 训练模型 → 检测并分类抓取 → 语音播报。这意味着<strong>所有技能必须在赛前练到不用想就能做出来</strong>，现场没有时间学新东西。
+</div>
+
+<h2><span class="n">一</span>九条主线，按这个顺序学</h2>
+
+<table>
+<thead><tr><th style="width:34px">#</th><th>知识点</th><th>学完的标志</th><th style="width:88px">课程</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Python 环境（uv 统一管理）+ OpenCV 读摄像头</td><td>屏幕上弹出实时画面</td><td><a href="lessons/0001-python-env-and-camera.html">第 1 课</a></td></tr>
+<tr><td>2</td><td>YOLO11 预训练模型推理</td><td>画面里的目标被框出并标上名字</td><td><a href="lessons/0002-yolo-inference.html">第 2 课</a></td></tr>
+<tr><td>3</td><td>拍图 + 标注 + 数据集结构</td><td>能产出 <code>data.yaml</code> 指向的数据集</td><td><a href="lessons/0003-labeling-and-dataset.html">第 3 课</a></td></tr>
+<tr><td>4</td><td>训练自己的模型并复跑</td><td>自己标的零件被正确识别，且知道花了多少分钟</td><td><a href="lessons/0004-train-and-rerun.html">第 4 课</a></td></tr>
+<tr><td>5</td><td>手眼标定：像素坐标 → 机械臂坐标</td><td>能说清标定在干什么，会跑单应矩阵标定</td><td>待补</td></tr>
+<tr><td>6</td><td>机械臂控制：连接、回零、移动、夹爪</td><td>用 Python 让机械臂抓一个东西放进盒子</td><td>待补</td></tr>
+<tr><td>7</td><td>语音播报与识别</td><td>程序检测到结果后自动播报 <code>PCB_OK</code> / <code>PCB_NG</code></td><td>待补</td></tr>
+<tr><td>8</td><td>工业相机接入</td><td>知道它和普通 USB 摄像头的差别并采到图</td><td>待补</td></tr>
+<tr><td>9</td><td>全流程计时演练</td><td>有一份自己的"90 分钟时间预算表"</td><td>待补</td></tr>
+</tbody>
+</table>
+
+<h2><span class="n">二</span>为什么是这个顺序</h2>
+
+<p>前 4 课是一条完整闭环：<strong>看得见 → 认得出 → 教得会 → 自己会</strong>。第 2 课的预训练模型能识别"人、瓶子、手机"，但<strong>识别不了螺母和 PCB 板缺陷</strong>——这个"不够用"的感觉要亲身经历一次，你才会明白第 3、4 课在解决什么问题。</p>
+
+<p>第 5 到 8 课是把"看得见"变成"动手抓"：相机告诉你东西在哪（像素坐标），机械臂只认自己的坐标系，中间的翻译工作就是手眼标定。这三课是赛场上的主要失分点。</p>
+
+<div class="box warn">
+<span class="t">三件必须从现在开始遵守的事</span>
+<strong>① 记录耗时。</strong>每课都记下"从开始到跑通花了多少分钟"。现场 90 分钟要跑完全套，这个数字决定了你现场能做什么、不能做什么。<br>
+<strong>② 类别表纪律。</strong>第 3 课定下的类别顺序（<code>classes.txt</code>）之后<strong>不许再改</strong>——训练时的序号、抓取代码里的序号必须一致，改了就会"识别对了却报错"。<br>
+<strong>③ 环境统一用 uv，Python 版本统一 3.11。</strong>课程里所有装库、跑脚本的命令都以 uv 为准（见第 1 课）；版本用 <code>uv python pin --global 3.11</code> 统一。全班环境一致，才不会被"我这里能跑"耽误时间。
+</div>
+
+<h2><span class="n">三</span>怎么排时间（建议）</h2>
+
+<table>
+<thead><tr><th>阶段</th><th>内容</th><th>建议用时</th></tr></thead>
+<tbody>
+<tr><td>第 1 至 2 天</td><td>第 1、2 课，把环境跑通</td><td>每天 1.5 小时</td></tr>
+<tr><td>第 3 至 4 天</td><td>第 3 课，拍自己的零件、标注</td><td>每天 2 小时</td></tr>
+<tr><td>第 5 至 6 天</td><td>第 4 课，训练 + 复跑 + 计时</td><td>每天 2 小时</td></tr>
+<tr><td>之后</td><td>第 5 至 8 课（标定、机械臂、语音、工业相机）</td><td>每周 2 至 3 次</td></tr>
+<tr><td>赛前一周</td><td>第 9 课，全流程计时演练</td><td>完整半天</td></tr>
+</tbody>
+</table>
+
+<h2><span class="n">四</span>延伸资源</h2>
+
+<p>每个知识点的文档与视频链接都整理在 <code>RESOURCES.md</code> 里（已逐条验证可访问），每一课末尾也会单独给出该课最该看的 1 至 2 个。</p>
+
+<div class="ask">
+<strong>卡住了随时问。</strong>遇到报错、装不上、跑不动，把<strong>完整报错信息</strong>发出来（不要只发截图里的一句话），并把你的系统（Windows / Jetson）和已执行的命令一起说清楚，就能很快定位。也可以直接在课程文件所在目录里打开 agent 追问。
+</div>
+
+<div class="pager">
+<span>备赛入门 · 学习地图</span>
+<span><a href="lessons/0001-python-env-and-camera.html">开始第 1 课 →</a></span>
+</div>
+
+</body>
+</html>
