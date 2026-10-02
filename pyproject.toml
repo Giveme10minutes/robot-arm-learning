@@ -7,7 +7,11 @@ authors = [
     { name = "Chen Yu", email = "wrchenyu@outlook.com" }
 ]
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "numpy>=2.4.6",
+    "opencv-python>=5.0.0.93",
+    "ultralytics>=8.4.171",
+]
 
 [project.scripts]
 robot-arm = "robot_arm:main"
